@@ -14,17 +14,27 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.attribute.FileAttributeView
 import java.nio.file.spi.FileSystemProvider
+import java.util.concurrent.ConcurrentHashMap
 
 class NFS4FileSystemProvider: FileSystemProvider() {
-    override fun getScheme(): String? {
+    companion object{
+        const val SCHEME = "nfs4"
+        const val DEFAULT_PORT: Short = 2049
+        const val DEFAULT_TIMEOUT = 30000L
+        const val MAX_PATH_LENGTH = 4096
+    }
+
+    private val fileSystems = ConcurrentHashMap<String, NFS4FileSystem>()
+
+    override fun getScheme(): String {
+        return SCHEME
+    }
+
+    override fun newFileSystem(uri: URI, env: Map<String?, *>): NFS4FileSystem {
         TODO("Not yet implemented")
     }
 
-    override fun newFileSystem(uri: URI?, env: Map<String?, *>?): FileSystem? {
-        TODO("Not yet implemented")
-    }
-
-    override fun getFileSystem(uri: URI?): FileSystem? {
+    override fun getFileSystem(uri: URI): FileSystem? {
         TODO("Not yet implemented")
     }
 
@@ -40,11 +50,14 @@ class NFS4FileSystemProvider: FileSystemProvider() {
         TODO("Not yet implemented")
     }
 
-    override fun newDirectoryStream(dir: Path?, filter: DirectoryStream.Filter<in Path>?): DirectoryStream<Path?>? {
-        TODO("Not yet implemented")
+    override fun newDirectoryStream(dir: Path, filter: DirectoryStream.Filter<in Path>): DirectoryStream<Path> {
+        if(dir !is NFS4Path){
+            throw IllegalArgumentException("$dir is not NFS4 Path")
+        }
+        return NFS4DirectoryStream(dir, filter)
     }
 
-    override fun createDirectory(dir: Path?, vararg attrs: FileAttribute<*>?) {
+    override fun createDirectory(dir: Path, vararg attrs: FileAttribute<*>) {
         TODO("Not yet implemented")
     }
 

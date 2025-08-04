@@ -88,4 +88,12 @@ class NFS4Path(
     ): WatchKey {
         TODO("Not yet implemented")
     }
+
+    fun getNFS4Client(): Long{
+        return nfs4FileSystem.getNFS4Client()
+    }
+
+    override fun toString(): String {
+        return path
+    }
 }

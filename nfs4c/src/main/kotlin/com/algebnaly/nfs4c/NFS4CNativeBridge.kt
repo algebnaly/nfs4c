@@ -5,9 +5,11 @@ class NFS4CNativeBridge {
         init {
             System.loadLibrary("nfscrs_jni")
         }
+        @JvmStatic
+        @JvmName("getClientSession")
+        external fun getClientSession(uid: Int, gid: Int, remoteAddress: String): Long
+        @JvmStatic
+        @JvmName("listDir")
+        external fun listDir(session: Long, path: String): ArrayList<String>
     }
-    @JvmName("getClientSession")
-    external fun getClientSession(uid: Int, gid: Int, remoteAddress: String): Long
-    @JvmName("listDir")
-    external fun listDir(session: Long, path: String): ArrayList<String>
 }
