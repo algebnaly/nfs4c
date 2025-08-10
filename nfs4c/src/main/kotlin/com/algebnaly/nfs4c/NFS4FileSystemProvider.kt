@@ -30,11 +30,11 @@ class NFS4FileSystemProvider: FileSystemProvider() {
         return SCHEME
     }
 
-    override fun newFileSystem(uri: URI, env: Map<String?, *>): NFS4FileSystem {
+    override fun newFileSystem(uri: URI, env: Map<String, *>): NFS4FileSystem {
         TODO("Not yet implemented")
     }
 
-    override fun getFileSystem(uri: URI): FileSystem? {
+    override fun getFileSystem(uri: URI): FileSystem {
         TODO("Not yet implemented")
     }
 
@@ -43,10 +43,10 @@ class NFS4FileSystemProvider: FileSystemProvider() {
     }
 
     override fun newByteChannel(
-        path: Path?,
-        options: Set<OpenOption?>?,
-        vararg attrs: FileAttribute<*>?
-    ): SeekableByteChannel? {
+        path: Path,
+        options: Set<OpenOption>?,
+        vararg attrs: FileAttribute<*>
+    ): SeekableByteChannel {
         TODO("Not yet implemented")
     }
 
@@ -61,55 +61,79 @@ class NFS4FileSystemProvider: FileSystemProvider() {
         TODO("Not yet implemented")
     }
 
-    override fun delete(path: Path?) {
+    override fun delete(path: Path) {
         TODO("Not yet implemented")
     }
 
-    override fun copy(source: Path?, target: Path?, vararg options: CopyOption?) {
+    override fun copy(source: Path, target: Path, vararg options: CopyOption) {
         TODO("Not yet implemented")
     }
 
-    override fun move(source: Path?, target: Path?, vararg options: CopyOption?) {
+    override fun move(source: Path, target: Path, vararg options: CopyOption) {
         TODO("Not yet implemented")
     }
 
-    override fun isSameFile(path: Path?, path2: Path?): Boolean {
+    override fun isSameFile(path: Path, path2: Path): Boolean {
         TODO("Not yet implemented")
     }
 
-    override fun isHidden(path: Path?): Boolean {
+    override fun isHidden(path: Path): Boolean {
         TODO("Not yet implemented")
     }
 
-    override fun getFileStore(path: Path?): FileStore? {
+    override fun getFileStore(path: Path): FileStore {
         TODO("Not yet implemented")
     }
 
-    override fun checkAccess(path: Path?, vararg modes: AccessMode?) {
+    override fun checkAccess(path: Path, vararg modes: AccessMode) {
         TODO("Not yet implemented")
     }
 
-    override fun <V : FileAttributeView?> getFileAttributeView(
-        path: Path?,
-        type: Class<V?>?,
-        vararg options: LinkOption?
-    ): V? {
+    override fun <V : FileAttributeView> getFileAttributeView(
+        path: Path,
+        type: Class<V>,
+        vararg options: LinkOption
+    ): V {
         TODO("Not yet implemented")
     }
 
-    override fun readAttributes(path: Path?, attributes: String?, vararg options: LinkOption?): Map<String?, Any?>? {
+    override fun readAttributes(path: Path, attributes: String, vararg options: LinkOption): Map<String, Any> {
+        val result = mutableMapOf<String, Any>()
+
+        val attrList = if (attributes == "*" || attributes == "basic:*") {
+            listOf("lastModifiedTime", "lastAccessTime", "creationTime", "size", "isRegularFile", "isDirectory", "isSymbolicLink", "isOther", "fileKey")
+        } else if (attributes.startsWith("basic:")) {
+            attributes.removePrefix("basic:").split(",")
+        } else {
+            attributes.split(",")
+        }
+
+        for (attr in attrList) {
+            when(attr) {
+//                "lastModifiedTime" -> result["lastModifiedTime"] = attrs.lastModifiedTime()
+//                "lastAccessTime" -> result["lastAccessTime"] = attrs.lastAccessTime()
+//                "creationTime" -> result["creationTime"] = attrs.creationTime()
+//                "size" -> result["size"] = attrs.size()
+//                "isRegularFile" -> result["isRegularFile"] = attrs.isRegularFile()
+//                "isDirectory" -> result["isDirectory"] = attrs.isDirectory()
+//                "isSymbolicLink" -> result["isSymbolicLink"] = attrs.isSymbolicLink()
+//                "isOther" -> result["isOther"] = attrs.isOther()
+//                "fileKey" -> attrs.fileKey()?.let { result["fileKey"] = it }
+            }
+        }
+
+        return result
+    }
+
+    override fun <A : BasicFileAttributes> readAttributes(
+        path: Path,
+        type: Class<A>,
+        vararg options: LinkOption
+    ): A {
         TODO("Not yet implemented")
     }
 
-    override fun <A : BasicFileAttributes?> readAttributes(
-        path: Path?,
-        type: Class<A?>?,
-        vararg options: LinkOption?
-    ): A? {
-        TODO("Not yet implemented")
-    }
-
-    override fun setAttribute(path: Path?, attribute: String?, value: Any?, vararg options: LinkOption?) {
+    override fun setAttribute(path: Path, attribute: String, value: Any, vararg options: LinkOption) {
         TODO("Not yet implemented")
     }
 }

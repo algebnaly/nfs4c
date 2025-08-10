@@ -11,5 +11,8 @@ class NFS4CNativeBridge {
         @JvmStatic
         @JvmName("listDir")
         external fun listDir(session: Long, path: String): ArrayList<String>
+        @JvmStatic
+        @JvmName("readAttr")
+        external fun readAttr(session: Long, path: String, attr: String): NFS4FileAttributes
     }
 }
