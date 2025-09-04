@@ -1,6 +1,5 @@
 package com.algebnaly.nfs4c
 
-import java.io.File
 import java.net.URI
 import java.nio.file.FileSystem
 import java.nio.file.LinkOption
@@ -8,7 +7,7 @@ import java.nio.file.Path
 import java.nio.file.WatchEvent
 import java.nio.file.WatchKey
 import java.nio.file.WatchService
-import java.util.function.Consumer
+
 
 class NFS4Path(
     private val nfs4FileSystem: NFS4FileSystem,
@@ -25,16 +24,20 @@ class NFS4Path(
         TODO("Not yet implemented")
     }
 
-    override fun isAbsolute(): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun isAbsolute(): Boolean = path.startsWith(nfs4FileSystem.separator)
 
-    override fun getRoot(): Path? {
-        TODO("Not yet implemented")
-    }
+    override fun getRoot(): Path = NFS4Path(this.nfs4FileSystem, "/")
 
     override fun getFileName(): Path? {
-        TODO("Not yet implemented")
+        if (isRoot()) return null
+
+        return path
+            .trimEnd(nfs4FileSystem.separator.single())
+            .split(nfs4FileSystem.separator)
+            .lastOrNull { it.isNotEmpty() }
+            ?.let { last ->
+                NFS4Path(nfs4FileSystem, last)
+            }
     }
 
     override fun getParent(): Path? {
@@ -88,6 +91,8 @@ class NFS4Path(
     ): WatchKey {
         TODO("Not yet implemented")
     }
+
+    fun isRoot(): Boolean = path == nfs4FileSystem.separator
 
     fun getNFS4Client(): Long{
         return nfs4FileSystem.getNFS4Client()

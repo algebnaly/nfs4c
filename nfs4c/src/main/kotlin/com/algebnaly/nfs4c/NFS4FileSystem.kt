@@ -41,9 +41,9 @@ class NFS4FileSystem private constructor(
 
     override fun provider(): FileSystemProvider? = nfs4Provider
 
-    override fun getSeparator(): String? = "/"
+    override fun getSeparator(): String = "/"
 
-    override fun getRootDirectories(): Iterable<Path?>? {
+    override fun getRootDirectories(): Iterable<Path> {
         TODO("Not yet implemented")
     }
 
@@ -51,7 +51,7 @@ class NFS4FileSystem private constructor(
         TODO("Not yet implemented")
     }
 
-    override fun supportedFileAttributeViews(): Set<String?>? {
+    override fun supportedFileAttributeViews(): Set<String> {
         TODO("Not yet implemented")
     }
 
