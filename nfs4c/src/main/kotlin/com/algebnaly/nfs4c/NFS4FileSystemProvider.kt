@@ -7,6 +7,8 @@ import java.nio.file.CopyOption
 import java.nio.file.DirectoryStream
 import java.nio.file.FileStore
 import java.nio.file.FileSystem
+import java.nio.file.FileSystemAlreadyExistsException
+import java.nio.file.FileSystemNotFoundException
 import java.nio.file.LinkOption
 import java.nio.file.OpenOption
 import java.nio.file.Path
@@ -15,31 +17,63 @@ import java.nio.file.attribute.FileAttribute
 import java.nio.file.attribute.FileAttributeView
 import java.nio.file.spi.FileSystemProvider
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.io.path.name
 
-class NFS4FileSystemProvider: FileSystemProvider() {
-    companion object{
+class NFS4FileSystemProvider : FileSystemProvider() {
+    companion object {
         const val SCHEME = "nfs4"
+
         const val DEFAULT_PORT: Short = 2049
+        const val DEFAULT_UID: Int = 1000
+        const val DEFAULT_GID: Int = 1000
         const val DEFAULT_TIMEOUT = 30000L
         const val MAX_PATH_LENGTH = 4096
     }
 
-    private val fileSystems = ConcurrentHashMap<String, NFS4FileSystem>()
+    private val fileSystems = ConcurrentHashMap<ConnectionKey, NFS4FileSystem>()
 
     override fun getScheme(): String {
         return SCHEME
     }
 
     override fun newFileSystem(uri: URI, env: Map<String, *>): NFS4FileSystem {
-        TODO("Not yet implemented")
+        val host =
+            uri.host ?: (env["host"] as? String ?: throw IllegalArgumentException("host required"))
+
+        val port: Short =
+            if (uri.port >= 1) uri.port.toShort() else (env["port"] as? Short ?: DEFAULT_PORT)
+        val uid = (env["uid"] as? Int) ?: DEFAULT_UID
+        val gid = (env["gid"] as? Int) ?: DEFAULT_GID
+
+        val key = ConnectionKey(host)
+
+        val fs = NFS4FileSystem.create(
+            this, host, port, uid, gid
+        )
+
+        val existing = fileSystems.putIfAbsent(key, fs)
+        if (existing != null) {
+            fs.close()
+            throw FileSystemAlreadyExistsException("FileSystem already exists for $uri")
+        }
+        return fs
     }
 
     override fun getFileSystem(uri: URI): FileSystem {
-        TODO("Not yet implemented")
+        val host =
+            uri.host ?: throw IllegalArgumentException("host required")
+
+        val key = ConnectionKey(
+            host
+        )
+        return fileSystems.get(key) ?: throw FileSystemNotFoundException("No FileSystem for $uri")
     }
 
     override fun getPath(uri: URI): Path {
-        TODO("Not yet implemented")
+        val host =
+            uri.host ?: throw IllegalArgumentException("host required")
+        val fs = getFileSystem(uri)
+        return fs.getPath(uri.path)
     }
 
     override fun newByteChannel(
@@ -50,8 +84,11 @@ class NFS4FileSystemProvider: FileSystemProvider() {
         TODO("Not yet implemented")
     }
 
-    override fun newDirectoryStream(dir: Path, filter: DirectoryStream.Filter<in Path>): DirectoryStream<Path> {
-        if(dir !is NFS4Path){
+    override fun newDirectoryStream(
+        dir: Path,
+        filter: DirectoryStream.Filter<in Path>
+    ): DirectoryStream<Path> {
+        if (dir !is NFS4Path) {
             throw IllegalArgumentException("$dir is not NFS4 Path")
         }
         return NFS4DirectoryStream(dir, filter)
@@ -73,13 +110,10 @@ class NFS4FileSystemProvider: FileSystemProvider() {
         TODO("Not yet implemented")
     }
 
-    override fun isSameFile(path: Path, path2: Path): Boolean {
-        TODO("Not yet implemented")
-    }
+    //TODO: need further work
+    override fun isSameFile(path: Path, path2: Path): Boolean = path == path2
 
-    override fun isHidden(path: Path): Boolean {
-        TODO("Not yet implemented")
-    }
+    override fun isHidden(path: Path): Boolean = path.name.startsWith(".")
 
     override fun getFileStore(path: Path): FileStore {
         TODO("Not yet implemented")
@@ -97,28 +131,52 @@ class NFS4FileSystemProvider: FileSystemProvider() {
         TODO("Not yet implemented")
     }
 
-    override fun readAttributes(path: Path, attributes: String, vararg options: LinkOption): Map<String, Any> {
-        val result = mutableMapOf<String, Any>()
+    override fun readAttributes(
+        path: Path,
+        attributes: String,
+        vararg options: LinkOption
+    ): Map<String, Any?> {
+        if(path !is NFS4Path){
+            throw IllegalArgumentException("$path is not NFS4 Path")
+        }
+        val result = mutableMapOf<String, Any?>()
 
         val attrList = if (attributes == "*" || attributes == "basic:*") {
-            listOf("lastModifiedTime", "lastAccessTime", "creationTime", "size", "isRegularFile", "isDirectory", "isSymbolicLink", "isOther", "fileKey")
+            listOf(
+                "lastModifiedTime",
+                "lastAccessTime",
+                "creationTime",
+                "size",
+                "isRegularFile",
+                "isDirectory",
+                "isSymbolicLink",
+                "isOther",
+                "fileKey"
+            )
         } else if (attributes.startsWith("basic:")) {
             attributes.removePrefix("basic:").split(",")
         } else {
             attributes.split(",")
         }
 
+        val fs = path.fileSystem;
+        if(fs !is NFS4FileSystem){
+            throw IllegalArgumentException("$fs is not NFS4FileSystem")
+        }
+
+        val nfs4attr = NFS4CNativeBridge.readAttr(session = fs.nfsClient, path=path.toString())
+
         for (attr in attrList) {
-            when(attr) {
-//                "lastModifiedTime" -> result["lastModifiedTime"] = attrs.lastModifiedTime()
-//                "lastAccessTime" -> result["lastAccessTime"] = attrs.lastAccessTime()
-//                "creationTime" -> result["creationTime"] = attrs.creationTime()
-//                "size" -> result["size"] = attrs.size()
-//                "isRegularFile" -> result["isRegularFile"] = attrs.isRegularFile()
-//                "isDirectory" -> result["isDirectory"] = attrs.isDirectory()
-//                "isSymbolicLink" -> result["isSymbolicLink"] = attrs.isSymbolicLink()
-//                "isOther" -> result["isOther"] = attrs.isOther()
-//                "fileKey" -> attrs.fileKey()?.let { result["fileKey"] = it }
+            when (attr) {
+                "lastModifiedTime" -> result["lastModifiedTime"] = nfs4attr.lastModifiedTime()
+                "lastAccessTime" -> result["lastAccessTime"] = nfs4attr.lastAccessTime()
+                "creationTime" -> result["creationTime"] = nfs4attr.creationTime()
+                "size" -> result["size"] = nfs4attr.size()
+                "isRegularFile" -> result["isRegularFile"] = nfs4attr.isRegularFile()
+                "isDirectory" -> result["isDirectory"] = nfs4attr.isDirectory()
+                "isSymbolicLink" -> result["isSymbolicLink"] = nfs4attr.isSymbolicLink()
+                "isOther" -> result["isOther"] = nfs4attr.isOther()
+                "fileKey" -> result["fileKey"] = nfs4attr.fileKey()
             }
         }
 
@@ -130,10 +188,28 @@ class NFS4FileSystemProvider: FileSystemProvider() {
         type: Class<A>,
         vararg options: LinkOption
     ): A {
-        TODO("Not yet implemented")
+        if (type != BasicFileAttributes::class.java) {
+            throw UnsupportedOperationException("Attributes of type $type not supported")
+        }
+
+        val nfsPath = path as? NFS4Path
+            ?: throw IllegalArgumentException("Path must be NFS4Path")
+
+        val fs = nfsPath.fileSystem as NFS4FileSystem
+        val client = fs.getNFS4Client()
+
+        val attrs = NFS4CNativeBridge.readAttr(client, nfsPath.toString())
+
+        @Suppress("UNCHECKED_CAST")
+        return attrs as A
     }
 
-    override fun setAttribute(path: Path, attribute: String, value: Any, vararg options: LinkOption) {
+    override fun setAttribute(
+        path: Path,
+        attribute: String,
+        value: Any,
+        vararg options: LinkOption
+    ) {
         TODO("Not yet implemented")
     }
 }

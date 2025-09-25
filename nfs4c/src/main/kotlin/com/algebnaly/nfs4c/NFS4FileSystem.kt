@@ -5,9 +5,9 @@ import java.nio.file.attribute.UserPrincipalLookupService
 import java.nio.file.spi.FileSystemProvider
 
 
-class NFS4FileSystem private constructor(
+class NFS4FileSystem internal constructor(
     val nfs4Provider: NFS4FileSystemProvider,
-    val serverAddress: String, // e.g., "myserver.example.com"
+    val serverAddress: String,
     val port: Short = NFS4FileSystemProvider.DEFAULT_PORT,
     var nfsClient: Long
 ) : FileSystem() {
@@ -20,7 +20,6 @@ class NFS4FileSystem private constructor(
             uid: Int = 1000,
             gid: Int = 1000,
         ): NFS4FileSystem {
-            //TODO: need to check result here
             val nfs4Client = NFS4CNativeBridge.getClientSession(uid, gid, "$serverAddress:$port")
             val nfs4FileSystem = NFS4FileSystem(nfs4Provider, serverAddress, port, nfs4Client)
             return nfs4FileSystem
@@ -86,7 +85,7 @@ class NFS4FileSystem private constructor(
         TODO("Not yet implemented")
     }
 
-    fun getNFS4Client(): Long{
+    fun getNFS4Client(): Long {
         return nfsClient
     }
 }
