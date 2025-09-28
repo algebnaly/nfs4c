@@ -120,7 +120,35 @@ class NFS4FileSystemProvider : FileSystemProvider() {
     }
 
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        TODO("Not yet implemented")
+        val nfsPath = path as NFS4Path
+
+        val attrs = try {
+            readAttributes(nfsPath, NFS4FileAttributes::class.java)
+        } catch (e: Exception) {
+            throw java.nio.file.NoSuchFileException(path.toString())
+        }
+
+        for (mode in modes) {
+            when (mode) {
+                AccessMode.READ -> {
+                    if (!attrs.isReadable()) {
+                        throw java.nio.file.AccessDeniedException(path.toString())
+                    }
+                }
+
+                AccessMode.WRITE -> {
+                    if (!attrs.isWritable()) {
+                        throw java.nio.file.AccessDeniedException(path.toString())
+                    }
+                }
+
+                AccessMode.EXECUTE -> {
+                    if (!attrs.isExecutable()) {
+                        throw java.nio.file.AccessDeniedException(path.toString())
+                    }
+                }
+            }
+        }
     }
 
     override fun <V : FileAttributeView> getFileAttributeView(
@@ -136,7 +164,7 @@ class NFS4FileSystemProvider : FileSystemProvider() {
         attributes: String,
         vararg options: LinkOption
     ): Map<String, Any?> {
-        if(path !is NFS4Path){
+        if (path !is NFS4Path) {
             throw IllegalArgumentException("$path is not NFS4 Path")
         }
         val result = mutableMapOf<String, Any?>()
@@ -159,12 +187,12 @@ class NFS4FileSystemProvider : FileSystemProvider() {
             attributes.split(",")
         }
 
-        val fs = path.fileSystem;
-        if(fs !is NFS4FileSystem){
+        val fs = path.fileSystem
+        if (fs !is NFS4FileSystem) {
             throw IllegalArgumentException("$fs is not NFS4FileSystem")
         }
 
-        val nfs4attr = NFS4CNativeBridge.readAttr(session = fs.nfsClient, path=path.toString())
+        val nfs4attr = NFS4CNativeBridge.readAttr(session = fs.nfsClient, path = path.toString())
 
         for (attr in attrList) {
             when (attr) {
@@ -177,6 +205,9 @@ class NFS4FileSystemProvider : FileSystemProvider() {
                 "isSymbolicLink" -> result["isSymbolicLink"] = nfs4attr.isSymbolicLink()
                 "isOther" -> result["isOther"] = nfs4attr.isOther()
                 "fileKey" -> result["fileKey"] = nfs4attr.fileKey()
+                "isExecutable" -> result["isExecutable"] = nfs4attr.isExecutable()
+                "isWritable" -> result["isWritable"] = nfs4attr.isWritable()
+                "isReadable" -> result["isReadable"] = nfs4attr.isReadable()
             }
         }
 
@@ -188,7 +219,7 @@ class NFS4FileSystemProvider : FileSystemProvider() {
         type: Class<A>,
         vararg options: LinkOption
     ): A {
-        if (type != BasicFileAttributes::class.java) {
+        if (type != BasicFileAttributes::class.java && type != NFS4FileAttributes::class.java) {
             throw UnsupportedOperationException("Attributes of type $type not supported")
         }
 

@@ -12,6 +12,7 @@ class NFS4FileAttributes(
     private val isSymbolicLink: Boolean,
     private val isOther: Boolean,
     private val size: Long,
+    private val mode: Int,
     private val fileKey: Any? = null
 ) : BasicFileAttributes {
 
@@ -32,4 +33,13 @@ class NFS4FileAttributes(
     override fun size(): Long = size
 
     override fun fileKey(): Any? = fileKey
+
+    fun isExecutable(): Boolean = mode.and(1.shl(6)) != 0
+
+    fun isWritable(): Boolean = mode.and(1.shl(7)) != 0
+
+    fun isReadable(): Boolean = mode.and(1.shl(8)) != 0
+
+
+    fun mode(): Int = mode
 }

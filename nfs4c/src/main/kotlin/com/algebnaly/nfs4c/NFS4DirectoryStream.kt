@@ -14,11 +14,23 @@ class NFS4DirectoryStream(
         if (isClosed) {
             throw ClosedDirectoryStreamException()
         }
+        val methods = java.nio.file.spi.FileSystemProvider::class.java.methods
+        methods.forEach { m ->
+            println("Provider method: ${m.name}(${m.parameterTypes.joinToString()})")
+        }
 
         val client = directory.getNFS4Client()
         //TODO: check result
         val resultList = NFS4CNativeBridge.listDir(client, directory.toString())
-        resultList.map { NFS4Path(directory.fileSystem as NFS4FileSystem, it) as Path }.toMutableList().iterator()
+
+
+        resultList.map {
+            NFS4Path(
+                directory.fileSystem as NFS4FileSystem,
+                directory.resolve(directory.newPath(it)).toString()
+            ) as Path
+        }
+            .toMutableList().iterator()
     }
 
     override fun iterator(): MutableIterator<Path> {
