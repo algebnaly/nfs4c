@@ -1,16 +1,14 @@
 package com.algebnaly.nfs4c
 
-import java.io.IOException
+import java.io.File
 import java.net.URI
 import java.nio.file.FileSystem
-import java.nio.file.InvalidPathException
 import java.nio.file.LinkOption
 import java.nio.file.Path
 import java.nio.file.WatchEvent
 import java.nio.file.WatchKey
 import java.nio.file.WatchService
 import java.security.InvalidParameterException
-import kotlin.io.path.absolute
 
 
 // we do not support relative path for now, all path are assumed to be absolute path
@@ -18,6 +16,10 @@ class NFS4Path(
     private val nfs4FileSystem: NFS4FileSystem,
     private val path: String
 ) : Path {
+
+    override fun toFile(): File {
+        throw UnsupportedOperationException("toFile is not support on Remote FileSystem")
+    }
 
     override fun getFileSystem(): FileSystem = nfs4FileSystem
 
@@ -67,24 +69,13 @@ class NFS4Path(
     }
 
     override fun getNameCount(): Int {
-        if (path.isEmpty()) return 0
-        val withoutRoot = if (path.startsWith(nfs4FileSystem.separator)) {
-            path.removePrefix(nfs4FileSystem.separator)
-        } else {
-            path
-        }
-        return withoutRoot.split(nfs4FileSystem.separator)
+        return path.split(nfs4FileSystem.separator)
             .filter { it.isNotEmpty() }
             .size
     }
 
     override fun getName(index: Int): Path {
-        val withoutRoot = if (path.startsWith(nfs4FileSystem.separator)) {
-            path.removePrefix(nfs4FileSystem.separator)
-        } else {
-            path
-        }
-        val nameList = withoutRoot.split(nfs4FileSystem.separator)
+        val nameList = path.split(nfs4FileSystem.separator)
             .filter { it.isNotEmpty() }
         return NFS4Path(nfs4FileSystem, nameList[index])
     }
@@ -94,29 +85,54 @@ class NFS4Path(
     }
 
     override fun startsWith(other: Path): Boolean {
-        TODO("Not yet implemented")
+        if (other.fileSystem != this.fileSystem) {
+            throw InvalidParameterException("$other and $this are not of the same file system")
+        }
+
+        val thisNormalized = this.normalize()
+        val otherNormalized = other.normalize()
+
+        val thisComponents = thisNormalized.toString()
+            .split(this.fileSystem.separator)
+            .filter { it.isNotEmpty() }
+        val otherComponents = otherNormalized.toString()
+            .split(other.fileSystem.separator)
+            .filter { it.isNotEmpty() }
+
+        if (thisNormalized.isAbsolute != otherNormalized.isAbsolute) {
+            return false
+        }
+
+        if (otherComponents.size > thisComponents.size) {
+            return false
+        }
+
+        return thisComponents.subList(0, otherComponents.size) == otherComponents
     }
 
     override fun normalize(): Path {
         val components = mutableListOf<String>()
-        val component_list = this.path.split(this.nfs4FileSystem.separator).filter {
-            it != "." ||
-                    it.isNotEmpty()
-        }
-        for (c in component_list) {
-            if (c != "..") {
-                components.add(c)
-            } else {
-                if (components.isEmpty()) {
-                    throw InvalidParameterException("$this")
+        val componentList = this.path.split(this.nfs4FileSystem.separator)
+            .filter { it.isNotEmpty() && it != "." }
+
+        for (c in componentList) {
+            if (c == "..") {
+                if (components.isNotEmpty() && components.last() != "..") {
+                    components.removeAt(components.size - 1)
+                } else {
+                    components.add("..")
                 }
-                components.removeAt(components.size - 1)
+            } else {
+                components.add(c)
             }
         }
-        return NFS4Path(
-            nfs4FileSystem,
-            nfs4FileSystem.separator + components.joinToString(nfs4FileSystem.separator)
-        )
+
+        val normalized = components.joinToString(nfs4FileSystem.separator)
+        return if (this.isAbsolute) {
+            NFS4Path(nfs4FileSystem, nfs4FileSystem.separator + normalized)
+        } else {
+            NFS4Path(nfs4FileSystem, normalized)
+        }
     }
 
     override fun resolve(other: Path): Path {

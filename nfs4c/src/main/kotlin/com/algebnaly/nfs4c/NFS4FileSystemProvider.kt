@@ -12,6 +12,7 @@ import java.nio.file.FileSystemNotFoundException
 import java.nio.file.LinkOption
 import java.nio.file.OpenOption
 import java.nio.file.Path
+import java.nio.file.ProviderMismatchException
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.attribute.FileAttributeView
@@ -81,6 +82,10 @@ class NFS4FileSystemProvider : FileSystemProvider() {
         options: Set<OpenOption>?,
         vararg attrs: FileAttribute<*>
     ): SeekableByteChannel {
+        val nfsPath = path as? NFS4Path
+            ?: throw ProviderMismatchException("Path is not an NFS4 path")
+
+        val opts = options ?: emptySet()
         TODO("Not yet implemented")
     }
 
@@ -125,7 +130,7 @@ class NFS4FileSystemProvider : FileSystemProvider() {
         val attrs = try {
             readAttributes(nfsPath, NFS4FileAttributes::class.java)
         } catch (e: Exception) {
-            throw java.nio.file.NoSuchFileException(path.toString())
+            throw java.nio.file.NoSuchFileException("$path: $e")
         }
 
         for (mode in modes) {

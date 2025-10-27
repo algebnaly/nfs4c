@@ -15,5 +15,9 @@ class NFS4CNativeBridge {
         @JvmStatic
         @JvmName("readAttr")
         external fun readAttr(session: Long, path: String): NFS4FileAttributes
+
+        @JvmStatic
+        @JvmName("openFile")
+        external fun openFile(session: Long, path: String, openOptions: Int): Long
     }
 }
