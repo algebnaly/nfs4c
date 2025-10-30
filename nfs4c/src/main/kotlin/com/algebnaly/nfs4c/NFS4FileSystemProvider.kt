@@ -86,7 +86,10 @@ class NFS4FileSystemProvider : FileSystemProvider() {
             ?: throw ProviderMismatchException("Path is not an NFS4 path")
 
         val opts = options ?: emptySet()
-        TODO("Not yet implemented")
+        val openOptions = getOpenOptionsFromSet(opts)
+        val session = nfsPath.getNFS4Client()
+        val channel = NFS4SeekableBytesChannel.create(session, nfsPath.toString(),openOptions)
+        return channel
     }
 
     override fun newDirectoryStream(

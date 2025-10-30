@@ -14,10 +14,6 @@ class NFS4DirectoryStream(
         if (isClosed) {
             throw ClosedDirectoryStreamException()
         }
-        val methods = java.nio.file.spi.FileSystemProvider::class.java.methods
-        methods.forEach { m ->
-            println("Provider method: ${m.name}(${m.parameterTypes.joinToString()})")
-        }
 
         val client = directory.getNFS4Client()
         //TODO: check result

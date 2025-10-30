@@ -1,5 +1,7 @@
 package com.algebnaly.nfs4c
 
+import java.nio.ByteBuffer
+
 class NFS4CNativeBridge {
     companion object{
         init {
@@ -19,5 +21,17 @@ class NFS4CNativeBridge {
         @JvmStatic
         @JvmName("openFile")
         external fun openFile(session: Long, path: String, openOptions: Int): Long
+
+        @JvmStatic
+        @JvmName("fileRead")
+        external fun fileRead(session: Long, openedFile: Long, byteBuffer: ByteBuffer): NFS4FileReadResult
+
+        @JvmStatic
+        @JvmName("fileSize")
+        external fun fileSize(session: Long, openedFile: Long): Long
+
+        @JvmStatic
+        @JvmName("fileClose")
+        external fun fileClose(session: Long, openedFile: Long)
     }
 }

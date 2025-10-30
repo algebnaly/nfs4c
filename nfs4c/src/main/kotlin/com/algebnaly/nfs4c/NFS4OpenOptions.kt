@@ -1,5 +1,8 @@
 package com.algebnaly.nfs4c
 
+import java.nio.file.OpenOption
+import java.nio.file.StandardOpenOption
+
 class NFS4OpenOptions {
     private var openOptions: Int = 0
     fun read(): NFS4OpenOptions {
@@ -22,7 +25,22 @@ class NFS4OpenOptions {
         return this
     }
 
-    fun getOpenOptions(): Int {
-        return this.openOptions
+    fun getOpenOptions(): Int = this.openOptions
+}
+
+fun getOpenOptionsFromSet(openOptionsSet: Set<OpenOption>): NFS4OpenOptions {
+    val opt = NFS4OpenOptions()
+    if(StandardOpenOption.READ in openOptionsSet){
+        opt.read()
     }
+    if(StandardOpenOption.WRITE in openOptionsSet){
+        opt.write()
+    }
+    if(StandardOpenOption.CREATE in openOptionsSet){
+        opt.create()
+    }
+    if(StandardOpenOption.TRUNCATE_EXISTING in openOptionsSet){
+        opt.truncate()
+    }
+    return opt
 }
