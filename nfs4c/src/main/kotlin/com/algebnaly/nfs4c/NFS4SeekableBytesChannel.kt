@@ -14,6 +14,7 @@ class NFS4SeekableBytesChannel(
 
     companion object {
         fun create(session: Long, path: String, opts: NFS4OpenOptions): NFS4SeekableBytesChannel {
+            println(opts.getOpenOptions())
             val openedFile = NFS4CNativeBridge.openFile(
                 session,
                 path,
@@ -25,7 +26,7 @@ class NFS4SeekableBytesChannel(
 
     override fun read(dst: ByteBuffer?): Int {
         if(dst == null){
-            return 0
+            throw NullPointerException()
         }
         if(isEof){
             return -1;// eof
@@ -35,14 +36,17 @@ class NFS4SeekableBytesChannel(
         if(r.readBytes == 0 && isEof){
             return -1
         }
+        position += r.readBytes
         return r.readBytes
     }
 
     override fun write(src: ByteBuffer?): Int {
         if(src == null){
-            return 0
+            throw NullPointerException()
         }
-        TODO("Not yet implemented")
+        val w =  NFS4CNativeBridge.fileWrite(session, openedFile, src)
+        position += w.WrittenBytes
+        return w.WrittenBytes
     }
 
     override fun position(): Long = position
@@ -69,5 +73,8 @@ class NFS4SeekableBytesChannel(
 class NFS4FileReadResult(
     val eof: Boolean,
     val readBytes: Int
-){
-}
+)
+
+class NFS4FileWriteResult(
+    val WrittenBytes: Int
+)

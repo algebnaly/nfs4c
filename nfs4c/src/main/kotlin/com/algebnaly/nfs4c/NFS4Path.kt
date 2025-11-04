@@ -160,6 +160,17 @@ class NFS4Path(
         return NFS4Path(nfs4FileSystem, resolvedPathStr)
     }
 
+    override fun resolve(p0: String): Path {
+        if (p0.isEmpty()) return this
+        if(p0.startsWith("/")){
+            return NFS4Path(nfs4FileSystem, p0)
+        }
+        if(path.endsWith("/")){
+            return NFS4Path(nfs4FileSystem, path + p0)
+        }
+        return NFS4Path(nfs4FileSystem, "$path/$p0")
+    }
+
     override fun toUri(): URI {
         val scheme = nfs4FileSystem.nfs4Provider.scheme
         val host = nfs4FileSystem.serverAddress
