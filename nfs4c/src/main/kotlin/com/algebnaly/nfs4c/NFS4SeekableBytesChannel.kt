@@ -64,9 +64,11 @@ class NFS4SeekableBytesChannel(
     override fun isOpen(): Boolean = isOpenFlag
 
     override fun close() {
+        if(!isOpenFlag){
+            return
+        }
         isOpenFlag = false
-        //TODO implement this in nfscrs_jni
-//        NFS4CNativeBridge.fileClose(session, openedFile)
+        NFS4CNativeBridge.fileClose(session, openedFile)
     }
 }
 

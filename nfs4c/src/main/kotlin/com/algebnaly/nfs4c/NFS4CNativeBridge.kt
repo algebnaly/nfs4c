@@ -38,5 +38,9 @@ class NFS4CNativeBridge {
         @JvmName("fileClose")
         external fun fileClose(session: Long, openedFile: Long)
 
+
+        @JvmStatic
+        @JvmName("setFileTimes")
+        external fun setFileTimes(session: Long, path: String, mTime: Long, aTime: Long, cTime: Long, bitmap: Int)
     }
 }

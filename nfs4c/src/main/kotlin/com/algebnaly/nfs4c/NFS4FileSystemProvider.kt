@@ -13,6 +13,7 @@ import java.nio.file.LinkOption
 import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.ProviderMismatchException
+import java.nio.file.attribute.BasicFileAttributeView
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.attribute.FileAttributeView
@@ -164,7 +165,19 @@ class NFS4FileSystemProvider : FileSystemProvider() {
         type: Class<V>,
         vararg options: LinkOption
     ): V {
-        TODO("Not yet implemented")
+        if(path !is NFS4Path){
+            throw IllegalArgumentException("expect path is a NFS4Path")
+        }
+
+        return when {
+            type.isAssignableFrom(NFS4BasicFileAttributeView::class.java) -> {
+                @Suppress("UNCHECKED_CAST")
+                NFS4BasicFileAttributeView.create(path) as V
+            }
+            else -> {
+                throw NotImplementedError("type of $type is not supported")
+            }
+        }
     }
 
     override fun readAttributes(
