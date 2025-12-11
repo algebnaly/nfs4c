@@ -42,5 +42,9 @@ class NFS4CNativeBridge {
         @JvmStatic
         @JvmName("setFileTimes")
         external fun setFileTimes(session: Long, path: String, mTime: Long, aTime: Long, cTime: Long, bitmap: Int)
+
+        @JvmStatic
+        @JvmName("mkdir")
+        external fun mkdir(session: Long, path: String, openOptions: Int, parents: Boolean, existsOk: Boolean)
     }
 }

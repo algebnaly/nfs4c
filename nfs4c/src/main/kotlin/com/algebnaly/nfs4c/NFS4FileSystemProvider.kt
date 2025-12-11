@@ -13,12 +13,14 @@ import java.nio.file.LinkOption
 import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.ProviderMismatchException
-import java.nio.file.attribute.BasicFileAttributeView
+import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.attribute.FileAttribute
 import java.nio.file.attribute.FileAttributeView
+import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.spi.FileSystemProvider
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.io.path.exists
 import kotlin.io.path.name
 
 class NFS4FileSystemProvider : FileSystemProvider() {
@@ -86,10 +88,14 @@ class NFS4FileSystemProvider : FileSystemProvider() {
         val nfsPath = path as? NFS4Path
             ?: throw ProviderMismatchException("Path is not an NFS4 path")
 
-        val opts = options ?: emptySet()
+        val opts = options?.toMutableSet() ?: mutableSetOf()
+        if (!nfsPath.exists()) {
+            opts.addAll(attrToOpenOptions(*attrs))
+        }
+
         val openOptions = getOpenOptionsFromSet(opts)
         val session = nfsPath.getNFS4Client()
-        val channel = NFS4SeekableBytesChannel.create(session, nfsPath.toString(),openOptions)
+        val channel = NFS4SeekableBytesChannel.create(session, nfsPath.toString(), openOptions)
         return channel
     }
 
@@ -104,7 +110,22 @@ class NFS4FileSystemProvider : FileSystemProvider() {
     }
 
     override fun createDirectory(dir: Path, vararg attrs: FileAttribute<*>) {
-        TODO("Not yet implemented")
+        val nfsPath = dir as? NFS4Path
+            ?: throw ProviderMismatchException("Path is not an NFS4 path")
+
+        val opts = mutableSetOf<StandardOpenOption>()
+        if (!nfsPath.exists()) {
+            opts.addAll(attrToOpenOptions(*attrs))
+        }
+        val openOptions = getOpenOptionsFromSet(opts)
+
+        NFS4CNativeBridge.mkdir(
+            session = dir.getNFS4Client(),
+            path = dir.toString(),
+            openOptions = openOptions.getOpenOptions(),
+            parents = true,
+            existsOk = true
+        )
     }
 
     override fun delete(path: Path) {
@@ -165,7 +186,7 @@ class NFS4FileSystemProvider : FileSystemProvider() {
         type: Class<V>,
         vararg options: LinkOption
     ): V {
-        if(path !is NFS4Path){
+        if (path !is NFS4Path) {
             throw IllegalArgumentException("expect path is a NFS4Path")
         }
 
@@ -174,6 +195,7 @@ class NFS4FileSystemProvider : FileSystemProvider() {
                 @Suppress("UNCHECKED_CAST")
                 NFS4BasicFileAttributeView.create(path) as V
             }
+
             else -> {
                 throw NotImplementedError("type of $type is not supported")
             }
@@ -264,4 +286,28 @@ class NFS4FileSystemProvider : FileSystemProvider() {
     ) {
         TODO("Not yet implemented")
     }
+}
+
+fun attrToOpenOptions(vararg attrs: FileAttribute<*>): Set<StandardOpenOption> {
+    val opts = mutableSetOf<StandardOpenOption>()
+    for (attr in attrs) {
+        when (attr.name()) {
+            "posix:permissions" -> {
+                val perms = attr.value() as Set<*>
+
+                if (PosixFilePermission.OWNER_READ in perms)
+                    opts.add(StandardOpenOption.READ)
+                if (PosixFilePermission.OWNER_WRITE in perms)
+                    opts.add(StandardOpenOption.WRITE)
+            }
+
+            "dos:readonly" -> {
+                val readOnly = attr.value() as Boolean
+                opts.add(StandardOpenOption.READ)
+                if (!readOnly)
+                    opts.add(StandardOpenOption.WRITE)
+            }
+        }
+    }
+    return opts
 }

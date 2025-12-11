@@ -14,7 +14,6 @@ class NFS4SeekableBytesChannel(
 
     companion object {
         fun create(session: Long, path: String, opts: NFS4OpenOptions): NFS4SeekableBytesChannel {
-            println(opts.getOpenOptions())
             val openedFile = NFS4CNativeBridge.openFile(
                 session,
                 path,
