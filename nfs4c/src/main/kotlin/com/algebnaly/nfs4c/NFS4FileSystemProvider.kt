@@ -129,7 +129,8 @@ class NFS4FileSystemProvider : FileSystemProvider() {
     }
 
     override fun delete(path: Path) {
-        TODO("Not yet implemented")
+        val nfsPath = path as? NFS4Path
+            ?: throw ProviderMismatchException("Path is not an NFS4 path")
     }
 
     override fun copy(source: Path, target: Path, vararg options: CopyOption) {
@@ -150,7 +151,9 @@ class NFS4FileSystemProvider : FileSystemProvider() {
     }
 
     override fun checkAccess(path: Path, vararg modes: AccessMode) {
-        val nfsPath = path as NFS4Path
+
+        val nfsPath = path as? NFS4Path
+            ?: throw ProviderMismatchException("Path is not an NFS4 path")
 
         val attrs = try {
             readAttributes(nfsPath, NFS4FileAttributes::class.java)

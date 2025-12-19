@@ -46,5 +46,9 @@ class NFS4CNativeBridge {
         @JvmStatic
         @JvmName("mkdir")
         external fun mkdir(session: Long, path: String, openOptions: Int, parents: Boolean, existsOk: Boolean)
+
+        @JvmStatic
+        @JvmName("delete")
+        external fun delete(session: Long, path: String)
     }
 }
