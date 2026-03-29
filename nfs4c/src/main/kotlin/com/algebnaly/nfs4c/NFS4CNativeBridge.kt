@@ -24,11 +24,11 @@ class NFS4CNativeBridge {
 
         @JvmStatic
         @JvmName("fileRead")
-        external fun fileRead(session: Long, openedFile: Long, byteBuffer: ByteBuffer): NFS4FileReadResult
+        external fun fileRead(session: Long, openedFile: Long, offset: Long, byteBuffer: ByteBuffer): NFS4FileReadResult
 
         @JvmStatic
         @JvmName("fileWrite")
-        external fun fileWrite(session: Long, openedFile: Long, byteBuffer: ByteBuffer): NFS4FileWriteResult
+        external fun fileWrite(session: Long, openedFile: Long, offset: Long, byteBuffer: ByteBuffer): NFS4FileWriteResult
 
         @JvmStatic
         @JvmName("fileSize")
@@ -37,7 +37,6 @@ class NFS4CNativeBridge {
         @JvmStatic
         @JvmName("fileClose")
         external fun fileClose(session: Long, openedFile: Long)
-
 
         @JvmStatic
         @JvmName("setFileTimes")

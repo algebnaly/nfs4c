@@ -30,7 +30,7 @@ class NFS4SeekableBytesChannel(
         if(isEof){
             return -1;// eof
         }
-        val r =  NFS4CNativeBridge.fileRead(session, openedFile, dst)
+        val r =  NFS4CNativeBridge.fileRead(session, openedFile, position, dst)
         isEof = r.eof
         if(r.readBytes == 0 && isEof){
             return -1
@@ -43,17 +43,22 @@ class NFS4SeekableBytesChannel(
         if(src == null){
             throw NullPointerException()
         }
-        val w =  NFS4CNativeBridge.fileWrite(session, openedFile, src)
-        position += w.WrittenBytes
-        return w.WrittenBytes
+        val w =  NFS4CNativeBridge.fileWrite(session, openedFile, position, src)
+        position += w.writtenBytes
+        return w.writtenBytes
     }
 
     override fun position(): Long = position
 
     override fun size(): Long = NFS4CNativeBridge.fileSize(session, openedFile)
 
-    override fun position(newPosition: Long): SeekableByteChannel? {
-        TODO("Not yet implemented")
+    override fun position(newPosition: Long): SeekableByteChannel {
+        if (newPosition < 0) {
+            throw IllegalArgumentException("New position cannot be negative")
+        }
+        position = newPosition
+        isEof = false // Reset EOF flag since we moved the cursor
+        return this
     }
 
     override fun truncate(size: Long): SeekableByteChannel? {
@@ -77,5 +82,5 @@ class NFS4FileReadResult(
 )
 
 class NFS4FileWriteResult(
-    val WrittenBytes: Int
+    val writtenBytes: Int
 )

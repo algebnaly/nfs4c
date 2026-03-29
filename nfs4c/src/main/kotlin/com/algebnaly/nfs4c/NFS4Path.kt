@@ -180,7 +180,9 @@ class NFS4Path(
         } else {
             nfs4FileSystem.separator
         }
-        val uri = URI.create("$scheme://$host:$port$appendedSep$path")
+        // Per RFC 2396, URI is not allowed to contain spaces
+        // URI constructor will to escape for us
+        val uri = URI(scheme, null, host, port.toInt(), path, null, null)
         return uri
     }
 

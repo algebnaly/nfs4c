@@ -70,7 +70,7 @@ class NFS4FileSystemProvider : FileSystemProvider() {
         val key = ConnectionKey(
             host
         )
-        return fileSystems.get(key) ?: throw FileSystemNotFoundException("No FileSystem for $uri")
+        return fileSystems[key] ?: throw FileSystemNotFoundException("No FileSystem for $uri")
     }
 
     override fun getPath(uri: URI): Path {
