@@ -9,7 +9,7 @@ class NFS4CNativeBridge {
         }
         @JvmStatic
         @JvmName("getClientSession")
-        external fun getClientSession(uid: Int, gid: Int, remoteAddress: String): Long
+        external fun getClientSession(uid: Int, gid: Int, remoteAddress: String, clientOwner: String): Long
         @JvmStatic
         @JvmName("listDir")
         external fun listDir(session: Long, path: String): ArrayList<String>
