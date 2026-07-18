@@ -19,8 +19,9 @@ class NFS4FileSystem internal constructor(
             port: Short = NFS4FileSystemProvider.DEFAULT_PORT,
             uid: Int = 1000,
             gid: Int = 1000,
+            clientOwner: String = "nfscrs-nfs4c",
         ): NFS4FileSystem {
-            val nfs4Client = NFS4CNativeBridge.getClientSession(uid, gid, "$serverAddress:$port")
+            val nfs4Client = NFS4CNativeBridge.getClientSession(uid, gid, "$serverAddress:$port", clientOwner)
             val nfs4FileSystem = NFS4FileSystem(nfs4Provider, serverAddress, port, nfs4Client)
             return nfs4FileSystem
         }
